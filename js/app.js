@@ -1,144 +1,183 @@
-var map, markers = [];
- var locations = [
-  {"name" : "Hyderabad", "marker": null},
-  {"name" : "Gujarat", "marker": null},
-  {"name" : "Noida", "marker": null},
-  {"name" : "Nagpur", "marker": null},
-  {"name" : "Mumbai", "marker": null},
-  {"name" : "Bangalore", "marker": null},
-  {"name" : "West Bengal", "marker": null},
-];
+/*
+This is the Model of our application here all the data
+will be stored, it contains to properties currentPlace and allPlaces,
+allPlaces is the array of object which holds value for the specific place.
+*/
+var Model = {
+    currentPlace : null,
 
+    allPlaces : [
+        {
+            name: "PVS Mall",
+            location: { lat: 28.952776, lng: 77.731523},
+        },
+        {
+            name: "Hotel Harmony Inn",
+            location: { lat: 28.966971, lng: 77.732063},
+        },
+        {
+            name: "Chaudhary Charan Singh University",
+            location: { lat: 28.969006, lng: 77.741132},
+        },
+        {
+            name: "The Yellow Chilli",
+            location: { lat: 28.967028, lng: 77.736088},
+        },
+        {
+            name: "Shopprix Mall",
+            location: { lat: 28.947669, lng: 77.675443},
+        },
+    ]
+};
+
+//Initialize variables
+var
+map, //Google map will be used for this
+//This is the infoWindow that GMap Provide
+infoWindow,
+//The markers of the GMap
+markers = ko.observableArray();
+
+window.mapBounds = new google.maps.LatLngBounds();
+
+//Initialize Map Function
+function initMap() {
+    map = new google.maps.Map(document.getElementById('map'), {
+        zoomControl: true,
+    });
+
+    //Create Markers from allPlaces array
+    createMarkers(Model.allPlaces);
+
+    infoWindow = new google.maps.InfoWindow();
+
+    //Apply Knockout Binding
+    ko.applyBindings(new viewModel());
+
+}
+
+//Create Map Marker Function
+function createMarkers(allPlaces) {
+    var
+    place,
+    i,
+    bounds,
+    lat,
+    lon,
+    allPlacesLength
+    allPlacesLength = allPlaces.length;
+
+    //Itterate over the allPlaces Array
+    for(i = 0; i < allPlacesLength; i++) {
+
+        place = allPlaces[i];
+        lat = place.location.lat;
+        lon = place.location.lng;
+        bounds = window.mapBounds;
+
+        //create a marker for the current selected place
+        marker = new google.maps.Marker({
+            animation: google.maps.Animation.DROP,
+            position: place.location,
+            map: map,
+            title: place.name
+        });
+
+        //Add Click Listner to the Marker
+        marker.addListener('click', (function(place) {
+            return function() {
+                //Used IIFE and set the currentPlace to the place
+                (function(place) { Model.currentPlace = place; })(place);
+                //Show Info Window
+                showInfoWindow();
+            };
+        })(place));
+
+        bounds.extend(new google.maps.LatLng(lat, lon));
+        // fit the map to the new marker
+        map.fitBounds(bounds);
+        // center the map
+        map.setCenter(bounds.getCenter());
+
+        //Push the current marker obj to ko observable Array
+        markers.push(marker);
+    }
+}
+
+//Show Info Window Function
+showInfoWindow = function() {
+    var
+    currentPlace = Model.currentPlace,
+    index = Model.allPlaces.indexOf(currentPlace),
+    content = '<div class="info-window">';
+    content += '<h4>'+ currentPlace.name +'</h4>';
+    infoWindow.setContent(content);
+    map.panTo(currentPlace.location);
+    //Open the map which is clicked
+    infoWindow.open(map, markers()[index]);
+};
+
+
+window.addEventListener('resize', function(e) {
+  //Make sure the map bounds get updated on page resize
+    map.fitBounds(mapBounds);
+});
+
+
+//Knockout viewModel
 var viewModel = function() {
   var self = this;
 
-  self.places = ko.observableArray(locations);
+  self.places = ko.observableArray(Model.allPlaces);
 
   self.filterText = ko.observable('');
 
+  self.showInfoWindowWhenClicked = function(place) {
+    Model.currentPlace = place;
+    var index = Model.allPlaces.indexOf(place);
+    var listGroup = $('.list-group-item');
+    var el = listGroup[index];
+    listGroup.each(function(placeIndex){
+        if(index != placeIndex) $(listGroup[placeIndex]).removeClass('active');
+    });
+    $(el).toggleClass('active');
+    $(el).hasClass('active') ? showInfoWindow() : infoWindow.close();
+
+
+  };
+
+  //A function that filter list and marker
   self.filter = ko.computed(function(){
+    infoWindow.close();
+
+    markers().forEach(function(obj) {
+        if(!obj.visible) obj.visible = true;
+        if(obj.getMap() === null) obj.setMap(map);
+    });
+
+    var filterLeftPlaces = ko.utils.arrayFilter(self.places(), function(places){
+        return places.name.toLowerCase().indexOf(self.filterText().toLowerCase()) == -1;
+    });
+    var
+    index,
+    marker;
+
+    filterLeftPlaces.forEach(function(obj) {
+        index = Model.allPlaces.indexOf(obj);
+        marker = markers()[index];
+        marker.visible = false;
+        marker.setMap(null);
+    });
 
     return ko.utils.arrayFilter(self.places(), function(places){
         return places.name.toLowerCase().indexOf(self.filterText().toLowerCase()) >= 0;
     });
+
   });
+
 };
-var vm = new viewModel();
-ko.applyBindings(vm);
 
-/*
-This is the fun part. Here's where we generate the custom Google Map for the website.
-See the documentation below for more details.
-https://developers.google.com/maps/documentation/javascript/reference
-*/
-
-/*
-Start here! initializeMap() is called when page is loaded.
-*/
-function initializeMap() {
-  var mapOptions = {
-    disableDefaultUI: true
-  };
-
-  /*
-  For the map to be displayed, the googleMap var must be
-  appended to #mapDiv in resumeBuilder.js.
-  */
-  map = new google.maps.Map(document.querySelector('#map'), mapOptions);
-
-
-  /*
-  createMapMarker(placeData) reads Google Places search results to create map pins.
-  placeData is the object returned from search results containing information
-  about a single location.
-  */
-  function createMapMarker(placeData) {
-
-    // The next lines save location data from the search result object to local variables
-    var lat = placeData.geometry.location.lat();  // latitude from the place service
-    var lon = placeData.geometry.location.lng();  // longitude from the place service
-    var name = placeData.formatted_address;   // name of the place from the place service
-    var bounds = window.mapBounds;            // current boundaries of the map window
-
-    // marker is an object with additional data about the pin for a single location
-    var marker = new google.maps.Marker({
-      map: map,
-      position: placeData.geometry.location,
-      title: name
-    });
-
-    // infoWindows are the little helper windows that open when you click
-    // or hover over a pin on a map. They usually contain more information
-    // about a location.
-    var infoWindow = new google.maps.InfoWindow({
-      content: name
-    });
-
-    // hmmmm, I wonder what this is about...
-    google.maps.event.addListener(marker, 'click', function() {
-
-    });
-
-    // this is where the pin actually gets added to the map.
-    // bounds.extend() takes in a map location object
-    bounds.extend(new google.maps.LatLng(lat, lon));
-    // fit the map to the new marker
-    map.fitBounds(bounds);
-    // center the map
-    map.setCenter(bounds.getCenter());
-    markers.push(marker);
-  }
-
-  /*
-  callback(results, status) makes sure the search returned results for a location.
-  If so, it creates a new map marker for that location.
-  */
-  function callback(results, status) {
-    if (status == google.maps.places.PlacesServiceStatus.OK) {
-      createMapMarker(results[0]);
-    }
-  }
-
-  /*
-  pinPoster(locations) takes in the array of locations
-  and fires off Google place searches for each location
-  */
-  function pinPoster(locations) {
-
-    // creates a Google place search service object. PlacesService does the work of
-    // actually searching for location data.
-    var service = new google.maps.places.PlacesService(map);
-
-    var locationsLength = locations.length;
-    // Iterates through the array of locations, creates a search object for each location
-      for(var i = 0; i < locationsLength; i++){
-      // the search request object
-      var request = {
-        query: locations[i].name
-      };
-
-      // Actually searches the Google Maps API for location data and runs the callback
-      // function with the search results after each search.
-      service.textSearch(request, callback);
-    }
-  }
-
-  // Sets the boundaries of the map based on pin locations
-  window.mapBounds = new google.maps.LatLngBounds();
-
-  // pinPoster(locations) creates pins on the map for each location in
-  // the locations array
-  pinPoster(locations);
-
-}
-
-
-// Calls the initializeMap() function when the page loads
-window.addEventListener('load', initializeMap);
-
-/*Vanilla JS way to listen for resizing of the window
-and adjust map bounds*/
-window.addEventListener('resize', function(e) {
-  //Make sure the map bounds get updated on page resize
- map.fitBounds(mapBounds);
-});
+//Initialize Map when ready
+$(document).ready(function() {
+    initMap();
+})

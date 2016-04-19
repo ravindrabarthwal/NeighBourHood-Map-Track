@@ -26,7 +26,7 @@
                 <input class="form-control" type="text" data-bind="textInput: filterText, valueUpdate: 'keyup'" placeholder="Filter Locations"></input>
             </div>
             <div class="list-group" data-bind="foreach: filter()">
-                <a class="list-group-item" href="#" data-bind="text: name"></a>
+                <a class="list-group-item" href="#" data-bind="text: name, click: $parent.showInfoWindowWhenClicked"></a>
             </div>
         </div>
 
@@ -35,7 +35,7 @@
 
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
         <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-min.js"></script>
-        <script src="https://maps.googleapis.com/maps/api/js?libraries=places"></script>
+        <script src="https://maps.googleapis.com/maps/api/js"></script>
         <script src="js/app.js"></script>
         <script>
         </script>
