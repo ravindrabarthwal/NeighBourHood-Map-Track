@@ -12,9 +12,9 @@
         <link rel="stylesheet" href="css/icomoon.css">
         <link rel="stylesheet" href="css/style.css">
     </head>
-    <body class="menu-hidden">
+    <body data-bind="css: toggleMenu">
         <div class="header">
-            <a href="#" class="menu-icon-link" data-bind="click: function() {$('body').toggleClass('menu-hidden');}">
+            <a href="#" class="menu-icon-link" data-bind="click: function(){menuStatus(!menuStatus())}">
                 <i class="icon-list"></i>
             </a>
 
@@ -23,20 +23,21 @@
 
         <div class="slide-menu">
             <div class="form-group">
-                <input class="form-control" type="text" data-bind="textInput: filterText, valueUpdate: 'keyup'" placeholder="Filter Locations"></input>
+                <input class="form-control" type="text" data-bind="textInput: filterText, valueUpdate: 'keyup'" placeholder="Filter Locations">
             </div>
             <div class="list-group" data-bind="foreach: filter()">
-                <a class="list-group-item" href="#" data-bind="text: name, click: $parent.showInfoWindowWhenClicked"></a>
+                <a class="list-group-item" href="#" data-bind="text: name, click: $parent.showInfoWindowWhenClicked,  css: {active: $index() === $parent.activeListItemIndex()}"></a>
             </div>
         </div>
 
-        <div id="map"></div>
+        <div class="map"></div>
 
 
         <script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-        <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-min.js"></script>
-        <script src="https://maps.googleapis.com/maps/api/js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-min.js"></script>
         <script src="js/app.js"></script>
+        <script src="https://maps.googleapis.com/maps/api/js?callback=initMap"
+        onerror="alert('Unable to Load Google Map, Check Internet Connection.')" async defer></script>
         <script>
         </script>
     </body>

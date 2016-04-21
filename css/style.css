@@ -61,6 +61,7 @@ h2 {
     transform: translate3d(0, 0, 0);
     transition: transform 0.2s;
     z-index: 1;
+    overflow: auto;
 }
 
 .menu-hidden .slide-menu {
@@ -75,7 +76,7 @@ h2 {
     margin: 0.5em 0;
 }
 
-#map {
+.map {
     position:fixed !important;
     position:absolute;
     top: 3.5em;
