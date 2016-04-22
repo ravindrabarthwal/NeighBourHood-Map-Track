@@ -212,7 +212,13 @@ function createMarkers(allPlaces) {
  */
 var getWikiInfo = function(place, i) {
     var wikiEndpoint = "https://en.wikipedia.org/w/api.php?action=opensearch&search="+place.name+"&format=json";
-
+    /**
+     * This timeout function run and after 8 sec
+     * alert that wikipedia request failed.
+     */
+    var wikiTimeout = setTimeout(function(){
+        if(i === 0) alert('Unable to Load Information from wikipedia');
+    }, 8000);
     /**
      * Get data using ajax and set the response to
      * current Model allPlaces object property wiki
@@ -222,9 +228,12 @@ var getWikiInfo = function(place, i) {
         dataType: "jsonp",
         success: function(data) {
             Model.allPlaces[i].wiki = data[2][0];
-        },
-        error: function() {
-            if(i === 0) alert('Unable to Load Information from wikipedia');
+            /**
+             * Now we got response from wikipedia,
+             * clear the timeout so that the alert
+             * will not open.
+             */
+            clearTimeout(wikiTimeout);
         }
     });
 };
